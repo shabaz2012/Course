@@ -83,6 +83,26 @@ class RunCollection {
         // Returns the best finish time achieved in this RunCollection
         return runs.stream().filter(v -> v.complete).mapToInt(Run::getRunTime).min().orElse(Integer.MAX_VALUE);
     }
+
+    public int bestOfBests()
+    {
+        //bestOfBests(
+        int cumulativeTime = 0;
+
+        for (int i=0; i<(course.obstacleCount); i++) {
+            int minTime = Integer.MAX_VALUE;
+            for(Run run: runs) {
+                if (i > (run.obstacleTimes.size()- 1)) {
+                    continue;
+                }
+                if (run.obstacleTimes.get(i) < minTime) {
+                    minTime = run.obstacleTimes.get(i);
+                }
+            }
+            cumulativeTime += minTime;
+        }
+        return cumulativeTime;
+    }
 }
 
 public class Solution {
@@ -149,5 +169,7 @@ public class Solution {
         assert runCollection.getNumRuns() == numRuns : "number of runs should be " + numRuns + ", was " + runCollection.getNumRuns();
         assert runCollection.personalBest() == 17 :
                 "personalBest should be 17, was " + runCollection.personalBest();
+        assert runCollection.bestOfBests() == 15 :
+                "bestOfBests should be 15, was " + runCollection.bestOfBests();
     }
 }
