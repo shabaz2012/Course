@@ -103,12 +103,54 @@ class RunCollection {
         }
         return cumulativeTime;
     }
+
+    public double chanceOfPersonalBest1(Run testRun) {
+        double averageTimeCumulative = 0;
+
+        for (int i=testRun.obstacleTimes.size(); i<(course.obstacleCount); i++) {
+            double averageTime = 0;
+            for(Run run: runs) {
+                if (i > (run.obstacleTimes.size()- 1)) {
+                    continue;
+                }
+                averageTime += (double) run.obstacleTimes.get(i) /runs.size();
+            }
+            averageTimeCumulative += averageTime;
+        }
+        averageTimeCumulative = averageTimeCumulative/ ((course.obstacleCount - testRun.obstacleTimes.size()) + 1);
+        return averageTimeCumulative;
+    }
+
+    public double chanceOfPersonalBest(Run currentRun) {
+        Random random = new Random();
+        int successes = 0;
+        int personalBest = personalBest();
+        int trials = 10000;
+        for (int i=0; i<trials; i++) {
+            int totalTime = currentRun.getRunTime();
+            for (int obstacleIndex = currentRun.obstacleTimes.size(); obstacleIndex < course.obstacleCount; obstacleIndex++) {
+                List<Integer> possibleTimes = new ArrayList<>();
+                for (Run run : runs) {
+                    if (run.obstacleTimes.size() > obstacleIndex) {
+                        possibleTimes.add(run.obstacleTimes.get(obstacleIndex));
+                    }
+                }
+                int randomIndex = random.nextInt(possibleTimes.size());
+                totalTime += possibleTimes.get(randomIndex);
+            }
+            if (totalTime <= personalBest) {
+                successes++;
+            }
+        }
+        return (double) successes / trials;
+    }
 }
 
 public class Solution {
     public static void main(String[] argv) {
         testRun();
         testRunCollection();
+        testChanceOfPersonalBest();
     }
 
     // This is not a complete test suite, but tests some basic functionality of the above code, and
@@ -171,5 +213,62 @@ public class Solution {
                 "personalBest should be 17, was " + runCollection.personalBest();
         assert runCollection.bestOfBests() == 15 :
                 "bestOfBests should be 15, was " + runCollection.bestOfBests();
+    }
+
+    public static void testChanceOfPersonalBest() {
+        System.out.println("Running testChanceOfPersonalBest");
+        // Test 1
+        int[][] obstacleData = new int[][] {{3, 3, 2},
+                {3, 3, 3}};
+        Course testCourse = new Course("Test Course", 3);
+        RunCollection runCollection = makeRunCollection(testCourse, obstacleData);
+        Run testRun = new Run(testCourse);
+        testRun.addObstacleTime(3);
+        testRun.addObstacleTime(3);
+        double chance = runCollection.chanceOfPersonalBest(testRun);
+        // The current run has 2 obstacles in it, {3, 3}
+        // chance_of_personal_best will run 10,000 trials with to fill in the
+        // remaining obstacles, randomly selecting one of 2 or 3 (the times for
+        // the third obstacle)
+        // The chance of the run being 8 seconds or less is 1/2
+        assert .48 <= chance && chance <= .52 : "chance should be between .48 and .52, was " + chance;
+
+        // Test 2
+        obstacleData = new int[][] {{3, 3, 2, 3},
+                {3, 3, 3, 2},
+                {5, 5, 2}};
+        testCourse = new Course("Test Course", 4);
+        runCollection = makeRunCollection(testCourse, obstacleData);
+        testRun = new Run(testCourse);
+        testRun.addObstacleTime(3);
+        testRun.addObstacleTime(3);
+        chance = runCollection.chanceOfPersonalBest(testRun);
+        // The current run has 2 obstacles in it, {3, 3}
+        // chance_of_personal_best will run 10,000 trials with to fill in the
+        // remaining two obstacles, randomly selecting one of:
+        // {2, 3, 2} for obstacle 3 (includes the incomplete run)
+        // {3, 2}    for obstacle 4
+        // The chance of the run being 11 seconds or less is 5/6 ~= .83333
+        assert .81333 <= chance && chance <= .85333 : "chance should be between .81333 and .85333, was " + chance;
+
+        // Test 3
+        obstacleData = new int[][] {{32, 37},
+                {31, 29, 34, 25, 25, 39},
+                {25, 34, 38, 24, 26, 39, 33},
+                {39, 21, 39, 34, 39, 29, 31, 22, 28, 20},
+                {23, 22, 35, 33, 36, 21, 29, 37, 24, 34},
+                {28, 34, 28, 22, 40, 28, 31, 33, 25, 20},
+                {20, 38, 40, 28, 34, 22},
+                {36, 39, 20, 32, 38, 24, 22},
+                {40, 20, 21, 37, 32, 30, 40, 25, 37, 30},
+                {21, 35, 30, 37, 32, 40, 26, 29, 29}};
+        testCourse = new Course("Test Course", 10);
+        runCollection = makeRunCollection(testCourse, obstacleData);
+        testRun = new Run(testCourse);
+        testRun.addObstacleTime(19);
+        testRun.addObstacleTime(19);
+        testRun.addObstacleTime(19);
+        chance = runCollection.chanceOfPersonalBest(testRun);
+        assert .92813 <= chance && chance <= .96813 : "chance should be between .92813 and .96813, was " + chance;
     }
 }
